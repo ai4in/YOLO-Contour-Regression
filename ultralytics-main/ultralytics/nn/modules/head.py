@@ -271,7 +271,7 @@ class Detect(nn.Module):
 
 
 class polarDetect(nn.Module):
-    # polar
+    # polar fcos标签分配
     """YOLOv8 Detect head for detection models."""
     dynamic = False  # force grid reconstruction
     export = False  # export mode
@@ -362,7 +362,7 @@ class polarDetect(nn.Module):
 
 
 class polarpaperDetect(nn.Module):
-    # polarpaper
+    # polarpaper v8标签分配
     """YOLOv8 Detect head for detection models."""
     dynamic = False  # force grid reconstruction
     export = False  # export mode
@@ -432,51 +432,10 @@ class polarpaperDetect(nn.Module):
             a[-1].bias.data[:36] = 1.0  # box
             b[-1].bias.data[:m.nc] = math.log(5 / m.nc / (640 / s) ** 2)  # cls (.01 objects, 80 classes, 640 img)
 
-class Segmenttree(Detect):
-    """YOLOv8 Segment head for segmentation models."""
 
-    def __init__(self, nc=80, nm=32, npr=256, ch=()):
-        """Initialize the YOLO model attributes such as the number of masks, prototypes, and the convolution layers."""
-        super().__init__(nc, ch)
-        self.nm = nm  # number of masks
-        self.npr = npr  # number of protos
-        self.proto = Proto(ch[0], self.npr, self.nm)  # protos
-        self.detect = Detect.forward
-
-        # c4 = max(ch[0] // 4, self.nm)
-        # self.cv4 = nn.ModuleList(nn.Sequential(Conv(x, c4, 3), Conv(c4, c4, 3), nn.Conv2d(c4, self.nm, 1)) for x in ch)
-
-    def forward(self, x):
-        """Return model outputs and mask coefficients if training, otherwise return outputs and mask coefficients."""
-        p = self.proto(x[0])  # mask protos
-        bs = p.shape[0]  # batch size
-
-        if self.export==False:
-            if self.training:
-                x = self.detect(self, x)
-                mc = torch.cat([xi[:,self.reg_max * 4+self.nc:].view(bs, self.nm, -1) for xi in x], 2)
-                x = [xi[:,:self.reg_max * 4+self.nc] for xi in x]
-                # print(mc.shape)
-
-            else:
-                x= self.detect(self, x)#eval
-                x = list(x)
-                mc = torch.cat([xi[:,self.reg_max * 4+self.nc:].view(bs, self.nm, -1) for xi in x[1]], 2)
-                x[1] = [xi[:,:self.reg_max * 4+self.nc] for xi in x[1]]
-                x = tuple(x)
-
-        # mc = torch.cat([self.cv4[i](x[i]).view(bs, self.nm, -1) for i in range(self.nl)], 2)  # mask coefficients
-        if self.export:
-            box_value,clss,mc = self.detect(self, x)
-            return (box_value, clss,mc, p)
-
-        if self.training:
-            return x, mc, p
-        return (torch.cat([x[0], mc], 1), (x[1], mc, p))#eval
-    
 class Segment(Detect):
     """YOLOv8 Segment head for segmentation models."""
-    #polarpaper
+    #polarpaper  v8标签分配
     def __init__(self, nc=80, nm=36, npr=256, ch=()):
         """Initialize the YOLO model attributes such as the number of masks, prototypes, and the convolution layers."""
         super().__init__(nc, ch)
@@ -616,7 +575,7 @@ class Segment(Detect):
             
 class polarSegment(Detect):
     """YOLOv8 Segment head for segmentation models."""
-    #polar
+    #polar focos标签分配
     def __init__(self, nc=80, nm=36, npr=256, ch=()):
         """Initialize the YOLO model attributes such as the number of masks, prototypes, and the convolution layers."""
         super().__init__(nc, ch)
